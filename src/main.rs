@@ -1,6 +1,8 @@
+use std::collections::HashMap;
+
 use winnow::{
     ascii::{alpha1, alphanumeric1, multispace0},
-    combinator::{delimited, separated_pair},
+    combinator::{delimited, separated, separated_pair, terminated},
     PResult, Parser,
 };
 
@@ -26,6 +28,19 @@ fn parse_attribute<'i>(input: &mut &'i str) -> PResult<(&'i str, &'i str)> {
         parse_val,
     )
     .parse_next(input)
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub struct Attributes<'i> {
+    kvs: HashMap<&'i str, &'i str>,
+}
+
+impl<'i> Attributes<'i> {
+    fn parse(input: &mut &'i str) -> PResult<Self> {
+        let kvs =
+            separated(0.., parse_attribute, terminated(',', multispace0)).parse_next(input)?;
+        Ok(Self { kvs })
+    }
 }
 
 #[cfg(test)]
@@ -67,6 +82,15 @@ mod tests {
         let input = r#"width =   "40""#;
         let actual = parse_attribute.parse(input).unwrap();
         let expected = ("width", "40");
+        assert_eq!(actual, expected);
+    }
+    #[test]
+    fn test_attribute() {
+        let input = r#"width="40", height = "30""#;
+        let actual = Attributes::parse.parse(input).unwrap();
+        let expected = Attributes {
+            kvs: HashMap::from([("width", "40"), ("height", "30")]),
+        };
         assert_eq!(actual, expected);
     }
 }
