@@ -1,8 +1,9 @@
 use std::collections::HashMap;
 
 use winnow::{
-    ascii::{alpha1, alphanumeric1, multispace0},
+    ascii::{alpha1, multispace0},
     combinator::{delimited, separated, separated_pair, terminated},
+    token::take_while,
     PResult, Parser,
 };
 
@@ -15,7 +16,10 @@ fn parse_key<'i>(input: &mut &'i str) -> PResult<&'i str> {
 }
 
 fn parse_val<'i>(input: &mut &'i str) -> PResult<&'i str> {
-    delimited('"', alphanumeric1, '"').parse_next(input)
+    let inner = take_while(1.., |c: char| {
+        c.is_alphanumeric() || c == '.' || c == '/' || c == ':'
+    });
+    delimited('"', inner, '"').parse_next(input)
 }
 
 /// Parses something like key="val"
@@ -120,6 +124,19 @@ mod tests {
             tag_type: "div",
             attributes: Attributes {
                 kvs: HashMap::from([("width", "40"), ("height", "100")]),
+            },
+        };
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn test_link_tag() {
+        let input = r#"<a href="https://testlink.com">"#;
+        let actual = Tag::parse.parse(&input).unwrap();
+        let expected = Tag {
+            tag_type: "a",
+            attributes: Attributes {
+                kvs: HashMap::from([("href", "https://testlink.com")]),
             },
         };
         assert_eq!(actual, expected);
