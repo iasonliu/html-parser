@@ -11,13 +11,11 @@ fn main() {
 }
 
 fn parse_key<'i>(input: &mut &'i str) -> PResult<&'i str> {
-    let key = alpha1.parse_next(input)?;
-    Ok(key)
+    alpha1.parse_next(input)
 }
 
 fn parse_val<'i>(input: &mut &'i str) -> PResult<&'i str> {
-    let val = delimited('"', alphanumeric1, '"').parse_next(input)?;
-    Ok(val)
+    delimited('"', alphanumeric1, '"').parse_next(input)
 }
 
 /// Parses something like key="val"
