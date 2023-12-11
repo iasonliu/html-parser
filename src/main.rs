@@ -43,6 +43,26 @@ impl<'i> Attributes<'i> {
     }
 }
 
+#[derive(Debug, PartialEq, Eq)]
+pub struct Tag<'i> {
+    /// Like 'div'
+    tag_type: &'i str,
+    attributes: Attributes<'i>,
+}
+
+impl<'i> Tag<'i> {
+    /// <div width="40", height="100">
+    fn parse(input: &mut &'i str) -> PResult<Self> {
+        let parse_parts = (alpha1, ' ', Attributes::parse);
+        let parse_tag = parse_parts.map(|(tag_type, _space_char, attributes)| Self {
+            tag_type,
+            attributes,
+        });
+        let tag = delimited('<', parse_tag, '>').parse_next(input)?;
+        Ok(tag)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -93,5 +113,17 @@ mod tests {
         };
         assert_eq!(actual, expected);
     }
+
+    #[test]
+    fn test_tag() {
+        let input = r#"<div width="40", height="100">"#;
+        let actual = Tag::parse.parse(&input).unwrap();
+        let expected = Tag {
+            tag_type: "div",
+            attributes: Attributes {
+                kvs: HashMap::from([("width", "40"), ("height", "100")]),
+            },
+        };
+        assert_eq!(actual, expected);
+    }
 }
-// <div windth="40" height="100">
